@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class FollowCam : MonoBehaviour
 {
-    static public GameObject POI; //The static point of interest
+    static public GameObject POI; //The static point of interest, static makes sure there is only one.
 
     [Header("Inscribed")]
     public float easing = 0.05f;
@@ -19,7 +19,11 @@ public class FollowCam : MonoBehaviour
 
     void FixedUpdate()
     {
-        Vector3 destination = Vector3.zero;
+        // if(POI == null)
+        // {
+        //     return;
+        // }
+        Vector3 destination = Vector3.zero; //POI.transform.position; Vector3.zero
         if(POI != null)
         {
             //If the POI has a Rigidbody, check to see if it is sleeping
