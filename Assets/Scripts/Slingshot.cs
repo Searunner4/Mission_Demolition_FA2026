@@ -10,6 +10,8 @@ public class Slingshot : MonoBehaviour
                                     //The dynamic section contains fields that will be set dynamically when the game is running.
     public GameObject prefabProjectile;
     public float velocityMult = 10f;
+
+    public GameObject projLinePrefab; //A reference to the ProjectileLine prefab that will be used to draw the line of the projectile's path.
     
     [Header("Set Dynamically")]
     public GameObject launchPoint;
@@ -88,10 +90,15 @@ public class Slingshot : MonoBehaviour
             // projRB.collisionDetectionMode = CollisionDetectionMode.Continuous;
             // projRB.velocity = -mouseDelta * velocityMult;
             projectileRigidbody.velocity = -mouseDelta * velocityMult;
+            //Switch to slingshot view immediately before setting POI
+            FollowCam.SWITCH_VIEW(FollowCam.eView.slingshot);
             FollowCam.POI = projectile; //Set the _MainCamera POI
+            //Add a ProjectileLine to the Projectile
+            Instantiate<GameObject>(projLinePrefab, projectile.transform); //Overloads the Instantiate<>() method and it accepts a parent trnaform as the second parameter, so an instance of projLinePrefab will be created as a child of projectile, eliminaitng the jneed for us to set the parent in a separate command.
             projectile = null;  //This severs the connection beteen this instance of the Slingshot script and the projectile GameObject.
                                 //This is a good clean-up task to do. If we do not sever this connection and later code destroyed that projectile,
                                 //then this remaining reference to it would prevent the computer memory holding the projectile from being reused for toher things.
+            MissionDemolition.SHOT_FIRED();
         }
     }
 }
