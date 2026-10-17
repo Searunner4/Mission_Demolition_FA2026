@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class Slingshot : MonoBehaviour
 {
@@ -12,6 +13,9 @@ public class Slingshot : MonoBehaviour
     public float velocityMult = 10f;
 
     public GameObject projLinePrefab; //A reference to the ProjectileLine prefab that will be used to draw the line of the projectile's path.
+    public float bandWidth = 0.15f;
+    public Material bandMat;
+    //public Color Bandcolor = new Color(0.35f, 0.2f, 0.1f, 1f);
     
     [Header("Set Dynamically")]
     public GameObject launchPoint;
@@ -19,14 +23,54 @@ public class Slingshot : MonoBehaviour
     public GameObject projectile; //a reference to the new Projectile instance that is created
     public bool aimingMode; // normally false, but is set to true when the player presses mouse button 0 down over the slingshot
     private Rigidbody projectileRigidbody;
+    private Transform leftArm;
+    private Transform rightArm;
+    private LineRenderer leftBand;
+    private LineRenderer rightBand;
+
+    [Header("Audio Source")]
+    public AudioSource audioSource;
+    public AudioClip releaseSound;
     void Awake()
     {
         Transform launchPointTrans = transform.Find("LaunchPoint");
         launchPoint = launchPointTrans.gameObject;
         launchPoint.SetActive(false);
         launchPos = launchPointTrans.position; 
+        leftArm = transform.Find("LeftArm");
+        rightArm = transform.Find("RightArm");
+        leftBand = MakeBandSegment("LeftBand");
+        rightBand = MakeBandSegment("RightBand");
+        UpdateBand(launchPos);
+        //audioSource = GetComponent<AudioSource>();
+    }
 
-        
+    LineRenderer MakeBandSegment(string name)
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(transform, false);
+
+        LineRenderer lr = go.AddComponent<LineRenderer>();
+        lr.material = bandMat;
+        lr.startWidth = bandWidth;
+        lr.endWidth = bandWidth;
+        lr.numCapVertices = 4;
+        lr.useWorldSpace = true; //useful for working with coordinates
+        lr.positionCount = 2; //The number of points in the line. A line with 2 points is a straight line.
+        return lr;
+    }
+
+    Vector3 ArmTip(Transform arm)
+    {
+        return arm.position + arm.up * arm.lossyScale.y; //want to look at the y scale in terms of the whole world.
+    }
+
+    void UpdateBand(Vector3 pos)
+    {
+        leftBand.SetPosition(0, ArmTip(leftArm));
+        leftBand.SetPosition(1, pos);
+        rightBand.SetPosition(0, ArmTip(rightArm));
+        rightBand.SetPosition(1, pos);
     }
 
     void OnMouseEnter()
@@ -79,9 +123,15 @@ public class Slingshot : MonoBehaviour
         //Move the projectile to this new position
         Vector3 projPos = launchPos + mouseDelta;
         projectile.transform.position = projPos;
+        UpdateBand(projPos);
 
         if(Input.GetMouseButtonUp(0)) //This is a 0 not an o, this will only return true on the frame (the Update) that the player released the mouse button.
         {
+            if(audioSource != null && releaseSound != null)
+            {
+                audioSource.PlayOneShot(releaseSound);
+            }
+            
             //The mouse has been released
             aimingMode = false;
             //Rigidbody projRB = projectile.GetComponent<Rigidbody>();
@@ -99,6 +149,7 @@ public class Slingshot : MonoBehaviour
                                 //This is a good clean-up task to do. If we do not sever this connection and later code destroyed that projectile,
                                 //then this remaining reference to it would prevent the computer memory holding the projectile from being reused for toher things.
             MissionDemolition.SHOT_FIRED();
+            UpdateBand(launchPos); //Reset the bands to the launch position
         }
     }
 }
